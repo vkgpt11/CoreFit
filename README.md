@@ -1,26 +1,65 @@
 # CoreFit
 
-CoreFit is a lightweight Android workout companion for rep-based exercise sessions. It automatically counts repetitions, manages sets and rest periods, and provides optional voice and vibration cues so you can stay focused on the exercise instead of counting manually.
+CoreFit is an Android guided-exercise companion built with Kotlin and Jetpack Compose. It helps users choose a body-area or fitness focus, select exercises, review an automatically structured routine, and then follow the routine with timed movement, holds, sets, rest periods, voice cues, and vibration cues.
 
 ![CoreFit logo](app/src/main/res/drawable/corefit_logo.webp)
 
-## Features
+## Product flow
 
-- Configurable repetitions per set
-- Configurable pace from 0.5 to 3 seconds per rep
-- Configurable number of sets
-- Configurable rest duration
-- 3-second get-ready countdown
-- Automatic transition between exercise and rest
-- Android Text-to-Speech rep counting
-- Optional vibration cues
-- Pause, resume, stop, repeat, and reset controls
-- Keeps the display awake during a workout
-- Safe layout handling for status bars and punch-hole / display-cutout areas
-- Light and dark theme support through Material 3
-- CoreFit launcher and in-app branding
+1. Choose a focus area.
+2. Review the curated exercises for that area.
+3. Select or remove exercises for today's routine.
+4. Review the generated sequence.
+5. Start the guided program.
+6. CoreFit automatically advances through movements, holds, sets, rest periods, and exercise transitions.
 
-## Tech stack
+## Current focus areas
+
+- Upper Back
+- Lower Back
+- Shoulder
+- Knee
+- Ankle
+- Core Strength
+- General Fitness
+
+These are exercise focus areas, not diagnoses. CoreFit currently provides general exercise templates and does not diagnose a condition or create an individualized medical treatment plan.
+
+## Exercise model
+
+Every exercise owns its own execution defaults rather than relying on one global counter. An exercise can define:
+
+- Rep-based or timed-hold mode
+- Repetitions
+- Sets
+- Movement duration per repetition
+- Hold duration
+- Rest between sets
+- Transition time before the next exercise
+- Simple form cues
+
+For example, a Glute Bridge can be modeled as 10 repetitions × 2 sets with a controlled movement phase, a 3-second hold at the top, and a 25-second set rest.
+
+## Guided runner
+
+The runner supports these phases:
+
+- Get Ready
+- Move
+- Hold
+- Set Rest
+- Next Exercise / Transition
+- Complete
+
+The screen stays awake during a routine and uses Android Text-to-Speech and vibration cues so users do not need to continuously watch the display.
+
+## Safety and scope
+
+CoreFit is an exercise guidance application, not a medical device. Exercise selection should eventually be reviewed with qualified clinical/physiotherapy input before any condition-specific program is presented as therapeutic guidance.
+
+Users should stop an exercise if it clearly worsens symptoms and seek professional assessment for severe, persistent, new, or concerning symptoms.
+
+## Technology
 
 - Kotlin
 - Jetpack Compose
@@ -34,7 +73,9 @@ CoreFit is a lightweight Android workout companion for rep-based exercise sessio
 ```text
 app/
   src/main/
-    java/com/example/simpleexercisecounter/MainActivity.kt
+    java/com/example/simpleexercisecounter/
+      MainActivity.kt       # navigation, selection UI and guided runner
+      ProgramCatalog.kt     # categories, exercises and default execution recipes
     res/
       drawable/corefit_logo.webp
       values/strings.xml
@@ -58,30 +99,28 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ## GitHub Actions
 
-The `CoreFit Android APK Build` workflow runs automatically on pushes and pull requests to `main` and can also be started manually from the Actions tab.
+The `CoreFit Android APK Build` workflow runs on pushes and pull requests to `main` and can also be started manually.
 
-After a successful build, download the artifact named:
+Successful builds publish the artifact:
 
 ```text
 corefit-debug-apk
 ```
 
-It contains `app-debug.apk`.
+## Planned evolution
 
-## Current scope
-
-CoreFit intentionally stays focused on the core workout-counter experience. There are currently no accounts, cloud services, workout history, analytics, or external database dependencies.
-
-## Possible next steps
-
-- Saved exercise presets
-- Timed hold / plank mode
-- Custom exercise names
-- Better pause/resume state handling
-- Exercise history using local storage
-- Adaptive launcher icon variants
-- Foreground workout service for more reliable background execution
+- User-configurable reps, holds, sets and rest
+- Exercise illustrations / demonstrations
+- Better pause/resume state preservation
+- Routine history and favorites
+- Local persistence for saved programs
+- Difficulty/progression levels
+- Contraindication and safety metadata
+- Clinician-reviewed program content
+- Warm-up and cool-down stages
+- Accessibility improvements
+- Background workout service
 
 ## License
 
-This project is currently intended for personal development and experimentation. Add a formal open-source license before redistributing it publicly as an open-source project.
+This project is currently intended for personal development and experimentation. Add a formal license before redistributing it as an open-source project.
