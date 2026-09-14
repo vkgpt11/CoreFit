@@ -1,9 +1,11 @@
 package com.example.simpleexercisecounter
 
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -65,17 +67,21 @@ fun CoreFitApp() {
                     category = chosen,
                     routine = routine,
                     onBack = { screen = AppScreen.EXERCISES },
-                    onStart = { screen = AppScreen.RUNNER }
+                    onStart = { if (routine.isNotEmpty()) screen = AppScreen.RUNNER }
                 )
             }
             AppScreen.RUNNER -> category?.let { chosen ->
                 val routine = chosen.exercises.filter { it.id in selectedIds }
-                RoutineRunner(
-                    category = chosen,
-                    routine = routine,
-                    onExit = { screen = AppScreen.REVIEW },
-                    onDone = { screen = AppScreen.HOME }
-                )
+                if (routine.isEmpty()) {
+                    screen = AppScreen.REVIEW
+                } else {
+                    RoutineRunner(
+                        category = chosen,
+                        routine = routine,
+                        onExit = { screen = AppScreen.REVIEW },
+                        onDone = { screen = AppScreen.HOME }
+                    )
+                }
             }
         }
     }
@@ -218,7 +224,7 @@ fun RoutineReviewScreen(
             }
         }
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(58.dp)) {
+        Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(58.dp), enabled = routine.isNotEmpty()) {
             Text("Start guided program", fontSize = 18.sp)
         }
     }
@@ -235,14 +241,25 @@ fun RoutineRunner(
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     var ttsReady by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
-        lateinit var engine: TextToSpeech
-        engine = TextToSpeech(context) { status ->
-            ttsReady = status == TextToSpeech.SUCCESS
-            if (ttsReady) engine.language = Locale.getDefault()
+    DisposableEffect(context) {
+        var engine: TextToSpeech? = null
+        engine = TextToSpeech(context.applicationContext) { status ->
+            val current = engine
+            if (status == TextToSpeech.SUCCESS && current != null) {
+                val languageResult = current.setLanguage(Locale.getDefault())
+                ttsReady = languageResult != TextToSpeech.LANG_MISSING_DATA &&
+                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED
+            } else {
+                ttsReady = false
+            }
         }
         tts = engine
-        onDispose { engine.stop(); engine.shutdown() }
+        onDispose {
+            ttsReady = false
+            engine?.stop()
+            engine?.shutdown()
+            tts = null
+        }
     }
 
     var exerciseIndex by remember { mutableIntStateOf(0) }
@@ -255,12 +272,26 @@ fun RoutineRunner(
     val exercise = routine.getOrNull(exerciseIndex)
 
     fun speak(text: String) {
-        if (ttsReady) tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "corefit")
+        if (ttsReady) {
+            runCatching {
+                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "corefit-${System.nanoTime()}")
+            }
+        }
     }
 
     fun buzz() {
-        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        vibrator.vibrate(VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE))
+        runCatching {
+            val vibrator: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                manager?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+            if (vibrator?.hasVibrator() == true) {
+                vibrator.vibrate(VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE))
+            }
+        }
     }
 
     fun moveToNextExercise() {
@@ -316,7 +347,7 @@ fun RoutineRunner(
             }
 
             RunPhase.HOLD -> {
-                val holdFor = if (item.mode == ExerciseMode.HOLD) item.holdSeconds else item.holdSeconds
+                val holdFor = item.holdSeconds
                 for (i in holdFor downTo 1) {
                     seconds = i
                     if (i <= 3) speak(i.toString())
