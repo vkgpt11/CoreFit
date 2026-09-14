@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SimpleExerciseCounter"
+rootProject.name = "RepFlow"
 include(":app")
