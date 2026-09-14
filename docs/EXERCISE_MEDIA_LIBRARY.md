@@ -3,656 +3,237 @@
 **Status:** Living media requirements document  
 **Current storage:** Local Android resources  
 **Future storage:** AWS S3 + CloudFront  
-**Goal:** Define every image and short demo video required by CoreFit, what each asset should demonstrate, and exactly where it should be stored.
+**Goal:** Define every image and short demo video required by CoreFit, what each asset should demonstrate, where it is stored, and production-ready prompts for generating consistent media.
 
----
+## 1. Storage
 
-## 1. Storage strategy
+Current images: `app/src/main/res/drawable/`  
+Current videos: `app/src/main/res/raw/`
 
-### Current — local Android resources
+Use the stable `exercise.id` from `ProgramCatalog.kt`.
 
-For the current version, all exercise media should be bundled inside the Android app.
-
-Images:
-
+Example for `bridge`:
 ```text
-app/src/main/res/drawable/
+exercise_bridge_preview.webp
+exercise_bridge_start.webp
+exercise_bridge_move.webp
+exercise_bridge_hold.webp
+exercise_bridge_return.webp
+exercise_bridge_demo.mp4
 ```
 
-Short videos:
-
+Future S3 convention:
 ```text
-app/src/main/res/raw/
+s3://corefit-exercise-media-<env>/exercises/v1/<category_id>/<exercise_id>/preview.webp
+s3://corefit-exercise-media-<env>/exercises/v1/<category_id>/<exercise_id>/start.webp
+s3://corefit-exercise-media-<env>/exercises/v1/<category_id>/<exercise_id>/move.webp
+s3://corefit-exercise-media-<env>/exercises/v1/<category_id>/<exercise_id>/hold.webp
+s3://corefit-exercise-media-<env>/exercises/v1/<category_id>/<exercise_id>/return.webp
+s3://corefit-exercise-media-<env>/exercises/v1/<category_id>/<exercise_id>/demo.mp4
 ```
+Recommended later: `Android -> CloudFront -> private S3`, with device caching.
 
-Use the exercise ID from `ProgramCatalog.kt` as the stable asset key.
+## 2. Common generation specification
 
-### Naming convention
+Generated exercise form must be reviewed by a qualified professional before pain-related media is approved.
 
-For an exercise with ID `bridge`:
+**IMAGE PREFIX — prepend to each image prompt:**
+> CoreFit exercise instruction asset. Photorealistic adult fitness model, modest neutral athletic clothing, inclusive non-branded appearance, clean bright home/physiotherapy studio, uncluttered light neutral background, entire relevant body and joints visible, anatomically plausible posture, instructional rather than dramatic, soft even lighting, fixed informative camera angle, no text, labels, logos, watermark or collage. 16:9 landscape, 1280x720 or higher, sharp for Android mobile UI.
 
-```text
-app/src/main/res/drawable/exercise_bridge_preview.webp
-app/src/main/res/drawable/exercise_bridge_start.webp
-app/src/main/res/drawable/exercise_bridge_move.webp
-app/src/main/res/drawable/exercise_bridge_hold.webp
-app/src/main/res/drawable/exercise_bridge_return.webp
-app/src/main/res/raw/exercise_bridge_demo.mp4
+**VIDEO PREFIX — prepend to each video prompt:**
+> CoreFit short exercise demonstration. Photorealistic adult fitness model, modest neutral athletic clothing, clean bright home/physiotherapy studio, uncluttered background, entire relevant body and joints continuously visible, anatomically plausible controlled movement, fixed camera, no cuts, zoom, text, logo or watermark, silent, 16:9 landscape, 1080p source, H.264-compatible, 24-30 fps, natural speed, near-seamless loop. Demonstrate only the named exercise and add no equipment unless specified.
+
+**Phase rule:** keep the same person, clothing, room and camera across phases. `preview` = clearest representative pose; `start` = setup; `move` = principal movement; `hold` = exact HOLD pose; `return` = controlled lowering/return.
+
+## 3. Exercise prompts
+
+### Upper Back
+
+#### Wall Angels — `wall_angels`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Wall angel against flat wall. START elbows bent about 90 degrees, ribs relaxed, neck neutral. MOVE/PREVIEW arms slide upward only through comfortable range without rib flare or shrugging. RETURN controlled descent.”
+**Video:** VIDEO PREFIX + “Wall Angels, three-quarter angle showing wall contact and arm path. Two slow reps: elbows bent, slide upward comfortably with shoulders down, return slowly. 8–12 sec.”
+
+#### Scapular Squeeze — `scapular_squeeze`
+Assets: preview/start/move/hold/return + demo.
+**Image:** IMAGE PREFIX + “Scapular squeeze. START shoulders neutral. MOVE draw shoulder blades gently back and down. HOLD long relaxed neck, no shrugging or exaggerated chest arch. RETURN release to neutral.”
+**Video:** VIDEO PREFIX + “Rear three-quarter view. Two cycles: neutral, gently draw shoulder blades back/down, hold 2 seconds, release. 10–12 sec.”
+
+#### Seated Thoracic Rotation — `thoracic_rotation`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Seated on stable chair, feet planted, pelvis forward. START upright. MOVE/PREVIEW rotate upper trunk gently while hips stay stable. RETURN to center.”
+**Video:** VIDEO PREFIX + “Rotate upper trunk right, center, left, center while hips remain stable. Comfortable range. 10–15 sec.”
+
+### Lower Back
+
+#### Pelvic Tilt — `pelvic_tilt`
+Assets: preview/start/move/hold/return + demo.
+**Image:** IMAGE PREFIX + “Supine on mat, knees bent, feet flat, side view. START natural lumbar curve. MOVE/HOLD gentle posterior pelvic tilt lightly flattening lower back without lifting hips. RETURN neutral.”
+**Video:** VIDEO PREFIX + “Two to three gentle pelvic tilts: neutral, flatten lower back lightly, hold 2 sec, release. Hips stay on mat. 8–12 sec.”
+
+#### Glute Bridge — `bridge`
+Assets: preview/start/move/hold/return + demo.
+**Image:** IMAGE PREFIX + “Glute bridge side view. START supine, knees bent, feet hip-width. MOVE hips rise. HOLD/PREVIEW controlled shoulders-to-knees diagonal, glutes engaged, no excessive lumbar arch. RETURN lower slowly.”
+**Video:** VIDEO PREFIX + “Two glute bridges: lift smoothly, hold top 2–3 sec without over-arching, lower slowly. 10–15 sec.”
+
+#### Bird Dog — `bird_dog`
+Assets: preview/start/move/hold/return + demo.
+**Image:** IMAGE PREFIX + “Quadruped START hands under shoulders, knees under hips. MOVE opposite arm forward and leg back. HOLD/PREVIEW hips level, trunk steady. RETURN controlled.”
+**Video:** VIDEO PREFIX + “One bird-dog rep each side, hold 2–3 sec, hips level and trunk steady, controlled return. 12–15 sec.”
+
+#### Single Knee-to-Chest — `knee_to_chest`
+Assets: preview/start/move/hold/return + demo.
+**Image:** IMAGE PREFIX + “Supine. START comfortable neutral. MOVE hands guide one knee gently toward chest. HOLD/PREVIEW comfortable range without forcing. RETURN controlled release.”
+**Video:** VIDEO PREFIX + “Bring one knee gently toward chest, hold comfortably several seconds, release slowly. No bouncing or forced range. 10–15 sec.”
+
+### Shoulder
+
+#### Pendulum — `pendulum`
+Assets: preview/start/move + demo.
+**Image:** IMAGE PREFIX + “Supported forward lean with one hand on stable chair/table, other arm fully relaxed. MOVE/PREVIEW small gentle circle driven by body sway, no active shoulder lifting.”
+**Video:** VIDEO PREFIX + “Relax hanging arm and make small slow circles with support. Shoulder remains relaxed. 10–15 sec.”
+
+#### Wall Slide — `wall_slide`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Shoulder wall slide. START arms comfortable low. MOVE/PREVIEW slide upward within comfortable range, shoulders down, neck relaxed. RETURN slowly.”
+**Video:** VIDEO PREFIX + “Two wall-slide reps, comfortable range only, no shrugging or forced overhead position. 8–12 sec.”
+
+#### Isometric External Rotation — `external_rotation`
+Assets: preview/start/hold + demo.
+**Image:** IMAGE PREFIX + “Elbow bent about 90 degrees and close to side. HOLD/PREVIEW gentle outward pressure against fixed wall/doorframe or opposite hand with no visible arm movement.”
+**Video:** VIDEO PREFIX + “Set elbow at side, gently press outward against fixed resistance without moving arm, hold several seconds, relax. 8–12 sec.”
+
+### Knee
+
+#### Quad Set — `quad_set`
+Assets: preview/start/hold + demo.
+**Image:** IMAGE PREFIX + “Straight supported leg, optional rolled towel under knee. START thigh relaxed. HOLD/PREVIEW quadriceps tightened while knee gently presses toward support; leg does not lift.”
+**Video:** VIDEO PREFIX + “Two quad-set cycles: tighten thigh, press knee down gently, hold, release. Show thigh/knee clearly. 8–12 sec.”
+
+#### Straight Leg Raise — `straight_leg_raise`
+Assets: preview/start/move/hold/return + demo.
+**Image:** IMAGE PREFIX + “One knee bent, exercising leg straight. START leg on mat. MOVE raise straight leg modestly. HOLD/PREVIEW knee straight, pelvis stable. RETURN slow lower.”
+**Video:** VIDEO PREFIX + “Two straight-leg raises: engage thigh, lift slowly, hold 1–2 sec, lower under control, pelvis stable. 10–15 sec.”
+
+#### Calf Raise — `calf_raise`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Standing bilateral calf raise near stable support. START feet flat. MOVE/PREVIEW heels lift evenly onto balls of feet, ankles aligned. RETURN controlled lowering.”
+**Video:** VIDEO PREFIX + “Two to three calf raises with light support available: rise, brief top, lower slowly. 8–12 sec.”
+
+#### Sit to Stand — `sit_to_stand`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Stable chair. START seated, feet planted. MOVE torso inclines slightly and hips rise. PREVIEW controlled standing with knees tracking over feet. RETURN hips back for controlled sitting.”
+**Video:** VIDEO PREFIX + “Two sit-to-stands: lean slightly, stand with knee alignment, reach hips back and sit under control. 10–15 sec.”
+
+### Ankle
+
+#### Ankle Alphabet — `ankle_alphabet`
+Assets: preview/start/move + demo.
+**Image:** IMAGE PREFIX + “Seated, leg supported and foot free. START ankle neutral. MOVE/PREVIEW foot traces letter using ankle motion while knee/hip stay mostly still. Foot and ankle prominent.”
+**Video:** VIDEO PREFIX + “Trace several sample alphabet letters slowly using ankle motion without excessive whole-leg movement. 10–15 sec.”
+
+#### Heel Raise — `heel_raise`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Standing with stable support within reach. START feet flat. MOVE/PREVIEW heels rise evenly. RETURN slowly to floor, upright posture.”
+**Video:** VIDEO PREFIX + “Two to three supported heel raises, brief top pause, controlled lower. 8–12 sec.”
+
+#### Toe Raise — `toe_raise`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Standing near support. START feet flat. MOVE/PREVIEW heels stay planted while forefoot/toes lift. RETURN slowly.”
+**Video:** VIDEO PREFIX + “Two to three toe raises: heels planted, lift front of feet, pause, lower slowly. 8–12 sec.”
+
+#### Supported Single-Leg Balance — `single_leg_balance`
+Assets: preview/start/hold + demo.
+**Image:** IMAGE PREFIX + “Beside stable chair/wall. START two feet down. HOLD/PREVIEW one foot lifted slightly, upright posture, support immediately available, optional light fingertip contact.”
+**Video:** VIDEO PREFIX + “Start two feet down, lift one foot slightly, balance several seconds with support immediately available, return foot. 8–12 sec.”
+
+### Core Strength
+
+#### Dead Bug — `dead_bug`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Supine tabletop START, hips/knees about 90 degrees, arms up. MOVE/PREVIEW lower one arm overhead and opposite leg outward without excessive back arch. RETURN tabletop.”
+**Video:** VIDEO PREFIX + “Alternating dead bug: lower opposite arm/leg with trunk controlled, return, switch sides. 10–15 sec.”
+
+#### Glute Bridge — Core — `bridge_core`
+Assets: preview/start/move/hold/return + demo.
+**Image:** Reuse the approved `bridge` prompt/media.
+**Video:** Reuse the approved `bridge` prompt/media rather than generating an inconsistent duplicate.
+
+#### Bird Dog — Core — `bird_dog_core`
+Assets: preview/start/move/hold/return + demo.
+**Image:** Reuse approved `bird_dog` prompt/media.
+**Video:** Reuse approved `bird_dog` prompt/media.
+
+#### Front Plank — `plank`
+Assets: preview/start/hold + demo.
+**Image:** IMAGE PREFIX + “Forearm plank side view. HOLD/PREVIEW elbows under shoulders, neck neutral, controlled straight body line, hips neither sagging nor excessively raised, relaxed breathing.”
+**Video:** VIDEO PREFIX + “Enter correct forearm plank, maintain steady alignment and breathing several seconds, safely lower. No push-ups. 8–12 sec.”
+
+### General Fitness
+
+#### Chair Squat — `chair_squat`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Stable chair behind model. START standing. MOVE hips back toward chair while knees track over feet. PREVIEW controlled squat near chair. RETURN stand smoothly.”
+**Video:** VIDEO PREFIX + “Two chair squats: hips back, knees controlled, lightly touch/sit as appropriate, stand smoothly. 10–15 sec.”
+
+#### Wall Push-Up — `wall_pushup`
+Assets: preview/start/move/return + demo.
+**Image:** IMAGE PREFIX + “Facing wall, hands around shoulder height/width. START straight body line. MOVE/PREVIEW elbows bend and chest moves toward wall while alignment stays straight. RETURN push away.”
+**Video:** VIDEO PREFIX + “Two to three wall push-ups with straight body line, controlled toward wall and back, no hip sag or shrug. 8–12 sec.”
+
+#### Standing March — `march`
+Assets: preview/start/move + demo.
+**Image:** IMAGE PREFIX + “Upright standing march. START feet down. MOVE/PREVIEW one knee lifts comfortably, opposite arm may swing naturally, torso tall and balanced.”
+**Video:** VIDEO PREFIX + “Easy controlled march in place with alternating knees and natural arms, upright posture, no running/high impact. 8–12 sec.”
+
+#### Calf Raise — General — `calf_raise_general`
+Assets: preview/start/move/return + demo.
+**Image:** Reuse approved `calf_raise` prompt/media.
+**Video:** Reuse approved `calf_raise` prompt/media.
+
+## 4. Production workflow
+
+1. Generate preview first and review form/camera.
+2. Lock model identity, clothing, room and camera.
+3. Generate remaining phase images consistently.
+4. Generate short video using the same setup.
+5. Verify video matches phase images.
+6. Review exercise form and safety.
+7. Convert to WebP/MP4 requirements.
+8. Store with exact filenames.
+9. Track `generated -> reviewed -> approved` status.
+10. Only approved media is eligible for public pain-related programs.
+
+Reject/regenerate for anatomically impossible joints, incorrect technique, unsafe range, inconsistent person/camera, unrequested equipment, cropped instructional joints, embedded text/watermarks/logos, distracting camera movement/cuts, or video artifacts altering joint position.
+
+## 5. Media manifest
+
+Use a machine-readable manifest later:
+```json
+{
+  "exerciseId": "bridge",
+  "version": 1,
+  "storage": "local",
+  "preview": "exercise_bridge_preview",
+  "start": "exercise_bridge_start",
+  "move": "exercise_bridge_move",
+  "hold": "exercise_bridge_hold",
+  "return": "exercise_bridge_return",
+  "video": "exercise_bridge_demo",
+  "reviewStatus": "pending",
+  "reviewedBy": null,
+  "reviewedAt": null
+}
 ```
+Later replace local resource names with CloudFront URLs without changing `exerciseId`.
 
-Not every exercise needs every phase image. Only create phase images that materially improve instruction.
+## 6. Initial production target
 
-### Future — AWS S3
+The current app catalog contains 26 entries, with three reusable concepts: `bridge -> bridge_core`, `bird_dog -> bird_dog_core`, `calf_raise -> calf_raise_general`. This yields **23 unique media sets**.
 
-The same exercise IDs and filenames should later migrate to:
+MVP per unique exercise: preview image + short demo video.  
+Enhanced guidance: start/move/hold/return images as applicable.
 
-```text
-s3://corefit-exercise-media-<env>/exercises/v1/<category_id>/<exercise_id>/
-```
+## 7. Safety/content rule
 
-Example:
-
-```text
-s3://corefit-exercise-media-prod/exercises/v1/lower_back/bridge/preview.webp
-s3://corefit-exercise-media-prod/exercises/v1/lower_back/bridge/start.webp
-s3://corefit-exercise-media-prod/exercises/v1/lower_back/bridge/move.webp
-s3://corefit-exercise-media-prod/exercises/v1/lower_back/bridge/hold.webp
-s3://corefit-exercise-media-prod/exercises/v1/lower_back/bridge/return.webp
-s3://corefit-exercise-media-prod/exercises/v1/lower_back/bridge/demo.mp4
-```
-
-Recommended future delivery:
-
-```text
-Android App -> CloudFront -> private S3 bucket
-```
-
-The Android app should eventually reference media metadata/URLs rather than embed all assets.
-
----
-
-## 2. Standard asset requirements
-
-### Preview image — required for every exercise
-
-Purpose:
-- exercise selection
-- routine review
-- fallback if video is unavailable
-
-Recommended:
-- WebP
-- 16:9
-- 1280×720 source or better
-- clean background
-- full body or relevant body region visible
-- no unnecessary text embedded in image
-
-### Start image — recommended
-
-Shows the correct starting position before movement begins.
-
-### Move image — recommended for rep-based exercises
-
-Shows the principal movement or peak motion.
-
-### Hold image — required when `holdSeconds > 0`
-
-Shows exactly what position the user should maintain while CoreFit announces **Hold**.
-
-### Return image — recommended for multi-phase exercises
-
-Shows the controlled lowering/return phase when CoreFit announces **Lower** or **Return**.
-
-### Demo video — required for final media-complete catalog
-
-Recommended:
-- MP4 / H.264
-- 720p minimum
-- 1080p source preferred
-- 16:9 landscape preferred
-- usually 6–15 seconds
-- up to 20 seconds for more complex exercises
-- silent is fine; CoreFit provides voice prompts
-- demonstrate 1–3 complete repetitions
-- clear camera angle
-- correct form
-- near-seamless loop preferred
-
----
-
-# 3. Complete media inventory
-
-## Upper Back
-
-### Wall Angels
-**ID:** `wall_angels`
-
-Local files:
-```text
-drawable/exercise_wall_angels_preview.webp
-drawable/exercise_wall_angels_start.webp
-drawable/exercise_wall_angels_move.webp
-drawable/exercise_wall_angels_return.webp
-raw/exercise_wall_angels_demo.mp4
-```
-
-Image/video should show:
-- start against wall
-- controlled upward arm slide
-- ribs relaxed
-- controlled return
-
-Video target: 8–12 sec, 2–3 repetitions.
-
-### Scapular Squeeze
-**ID:** `scapular_squeeze`
-
-```text
-drawable/exercise_scapular_squeeze_preview.webp
-drawable/exercise_scapular_squeeze_start.webp
-drawable/exercise_scapular_squeeze_move.webp
-drawable/exercise_scapular_squeeze_hold.webp
-drawable/exercise_scapular_squeeze_return.webp
-raw/exercise_scapular_squeeze_demo.mp4
-```
-
-Show neutral shoulders -> blades gently back/down -> hold without shrugging -> release.
-
-Video target: 10–15 sec.
-
-### Seated Thoracic Rotation
-**ID:** `thoracic_rotation`
-
-```text
-drawable/exercise_thoracic_rotation_preview.webp
-drawable/exercise_thoracic_rotation_start.webp
-drawable/exercise_thoracic_rotation_move.webp
-drawable/exercise_thoracic_rotation_return.webp
-raw/exercise_thoracic_rotation_demo.mp4
-```
-
-Show seated neutral posture and upper-trunk rotation while hips remain stable.
-
-Video target: 10–15 sec.
-
----
-
-## Lower Back
-
-### Pelvic Tilt
-**ID:** `pelvic_tilt`
-
-```text
-drawable/exercise_pelvic_tilt_preview.webp
-drawable/exercise_pelvic_tilt_start.webp
-drawable/exercise_pelvic_tilt_move.webp
-drawable/exercise_pelvic_tilt_hold.webp
-drawable/exercise_pelvic_tilt_return.webp
-raw/exercise_pelvic_tilt_demo.mp4
-```
-
-Show neutral lumbar position -> gentle pelvic tilt/flattening -> brief hold -> release.
-
-Video target: 8–12 sec.
-
-### Glute Bridge
-**ID:** `bridge`
-
-```text
-drawable/exercise_bridge_preview.webp
-drawable/exercise_bridge_start.webp
-drawable/exercise_bridge_move.webp
-drawable/exercise_bridge_hold.webp
-drawable/exercise_bridge_return.webp
-raw/exercise_bridge_demo.mp4
-```
-
-Show supine start -> hips lift -> top hold -> controlled lower.
-
-Important: no excessive lower-back arch.
-
-Video target: 10–15 sec.
-
-### Bird Dog
-**ID:** `bird_dog`
-
-```text
-drawable/exercise_bird_dog_preview.webp
-drawable/exercise_bird_dog_start.webp
-drawable/exercise_bird_dog_move.webp
-drawable/exercise_bird_dog_hold.webp
-drawable/exercise_bird_dog_return.webp
-raw/exercise_bird_dog_demo.mp4
-```
-
-Show quadruped -> opposite arm/leg extension -> stable hold -> controlled return.
-
-Video target: 10–15 sec.
-
-### Single Knee-to-Chest
-**ID:** `knee_to_chest`
-
-```text
-drawable/exercise_knee_to_chest_preview.webp
-drawable/exercise_knee_to_chest_start.webp
-drawable/exercise_knee_to_chest_move.webp
-drawable/exercise_knee_to_chest_hold.webp
-drawable/exercise_knee_to_chest_return.webp
-raw/exercise_knee_to_chest_demo.mp4
-```
-
-Show lying start -> one knee gently brought toward chest -> hold -> return.
-
-Video target: 10–15 sec.
-
----
-
-## Shoulder
-
-### Pendulum
-**ID:** `pendulum`
-
-```text
-drawable/exercise_pendulum_preview.webp
-drawable/exercise_pendulum_start.webp
-drawable/exercise_pendulum_move.webp
-raw/exercise_pendulum_demo.mp4
-```
-
-Show supported forward lean, relaxed arm, small controlled circles.
-
-Video target: 10–15 sec.
-
-### Wall Slide
-**ID:** `wall_slide`
-
-```text
-drawable/exercise_wall_slide_preview.webp
-drawable/exercise_wall_slide_start.webp
-drawable/exercise_wall_slide_move.webp
-drawable/exercise_wall_slide_return.webp
-raw/exercise_wall_slide_demo.mp4
-```
-
-Show arms sliding upward within a comfortable range and returning.
-
-Video target: 8–12 sec.
-
-### Isometric External Rotation
-**ID:** `external_rotation`
-
-```text
-drawable/exercise_external_rotation_preview.webp
-drawable/exercise_external_rotation_start.webp
-drawable/exercise_external_rotation_hold.webp
-raw/exercise_external_rotation_demo.mp4
-```
-
-Show elbow position and gentle outward pressure without visible arm movement.
-
-Video target: 8–12 sec.
-
----
-
-## Knee
-
-### Quad Set
-**ID:** `quad_set`
-
-```text
-drawable/exercise_quad_set_preview.webp
-drawable/exercise_quad_set_start.webp
-drawable/exercise_quad_set_hold.webp
-raw/exercise_quad_set_demo.mp4
-```
-
-Show supported straight leg and visible thigh contraction while pressing knee toward support.
-
-Video target: 8–12 sec.
-
-### Straight Leg Raise
-**ID:** `straight_leg_raise`
-
-```text
-drawable/exercise_straight_leg_raise_preview.webp
-drawable/exercise_straight_leg_raise_start.webp
-drawable/exercise_straight_leg_raise_move.webp
-drawable/exercise_straight_leg_raise_hold.webp
-drawable/exercise_straight_leg_raise_return.webp
-raw/exercise_straight_leg_raise_demo.mp4
-```
-
-Show thigh engaged -> straight leg raised -> brief hold -> controlled lower.
-
-Video target: 10–15 sec.
-
-### Calf Raise — Knee Program
-**ID:** `calf_raise`
-
-```text
-drawable/exercise_calf_raise_preview.webp
-drawable/exercise_calf_raise_start.webp
-drawable/exercise_calf_raise_move.webp
-drawable/exercise_calf_raise_return.webp
-raw/exercise_calf_raise_demo.mp4
-```
-
-Show standing neutral -> rise onto balls of feet -> controlled lowering.
-
-Video target: 8–12 sec.
-
-### Sit to Stand
-**ID:** `sit_to_stand`
-
-```text
-drawable/exercise_sit_to_stand_preview.webp
-drawable/exercise_sit_to_stand_start.webp
-drawable/exercise_sit_to_stand_move.webp
-drawable/exercise_sit_to_stand_return.webp
-raw/exercise_sit_to_stand_demo.mp4
-```
-
-Show seated position -> stand with controlled knee alignment -> controlled sit.
-
-Video target: 10–15 sec.
-
----
-
-## Ankle
-
-### Ankle Alphabet
-**ID:** `ankle_alphabet`
-
-```text
-drawable/exercise_ankle_alphabet_preview.webp
-drawable/exercise_ankle_alphabet_start.webp
-drawable/exercise_ankle_alphabet_move.webp
-raw/exercise_ankle_alphabet_demo.mp4
-```
-
-Show seated supported leg and foot tracing letters with ankle movement.
-
-Video target: 10–15 sec sample; does not need to show entire alphabet.
-
-### Heel Raise
-**ID:** `heel_raise`
-
-```text
-drawable/exercise_heel_raise_preview.webp
-drawable/exercise_heel_raise_start.webp
-drawable/exercise_heel_raise_move.webp
-drawable/exercise_heel_raise_return.webp
-raw/exercise_heel_raise_demo.mp4
-```
-
-Show neutral standing -> heels lift -> controlled return, with support visible if used.
-
-Video target: 8–12 sec.
-
-### Toe Raise
-**ID:** `toe_raise`
-
-```text
-drawable/exercise_toe_raise_preview.webp
-drawable/exercise_toe_raise_start.webp
-drawable/exercise_toe_raise_move.webp
-drawable/exercise_toe_raise_return.webp
-raw/exercise_toe_raise_demo.mp4
-```
-
-Show heels maintained on floor while forefoot/toes lift and lower.
-
-Video target: 8–12 sec.
-
-### Supported Single-Leg Balance
-**ID:** `single_leg_balance`
-
-```text
-drawable/exercise_single_leg_balance_preview.webp
-drawable/exercise_single_leg_balance_start.webp
-drawable/exercise_single_leg_balance_hold.webp
-raw/exercise_single_leg_balance_demo.mp4
-```
-
-Show safe standing position with wall/chair support immediately available.
-
-Video target: 8–12 sec.
-
----
-
-## Core Strength
-
-### Dead Bug
-**ID:** `dead_bug`
-
-```text
-drawable/exercise_dead_bug_preview.webp
-drawable/exercise_dead_bug_start.webp
-drawable/exercise_dead_bug_move.webp
-drawable/exercise_dead_bug_return.webp
-raw/exercise_dead_bug_demo.mp4
-```
-
-Show tabletop start -> opposite arm/leg lower -> trunk remains controlled -> return.
-
-Video target: 10–15 sec.
-
-### Glute Bridge — Core Program
-**ID:** `bridge_core`
-
-```text
-drawable/exercise_bridge_core_preview.webp
-drawable/exercise_bridge_core_start.webp
-drawable/exercise_bridge_core_move.webp
-drawable/exercise_bridge_core_hold.webp
-drawable/exercise_bridge_core_return.webp
-raw/exercise_bridge_core_demo.mp4
-```
-
-Can reuse the same source footage/imagery as `bridge` if technically mapped separately.
-
-### Bird Dog — Core Program
-**ID:** `bird_dog_core`
-
-```text
-drawable/exercise_bird_dog_core_preview.webp
-drawable/exercise_bird_dog_core_start.webp
-drawable/exercise_bird_dog_core_move.webp
-drawable/exercise_bird_dog_core_hold.webp
-drawable/exercise_bird_dog_core_return.webp
-raw/exercise_bird_dog_core_demo.mp4
-```
-
-Can reuse the same source media as `bird_dog` if mapped separately.
-
-### Front Plank
-**ID:** `plank`
-
-```text
-drawable/exercise_plank_preview.webp
-drawable/exercise_plank_start.webp
-drawable/exercise_plank_hold.webp
-raw/exercise_plank_demo.mp4
-```
-
-Show correct plank alignment and steady breathing position.
-
-Video target: 8–12 sec.
-
----
-
-## General Fitness
-
-### Chair Squat
-**ID:** `chair_squat`
-
-```text
-drawable/exercise_chair_squat_preview.webp
-drawable/exercise_chair_squat_start.webp
-drawable/exercise_chair_squat_move.webp
-drawable/exercise_chair_squat_return.webp
-raw/exercise_chair_squat_demo.mp4
-```
-
-Show standing -> controlled squat toward chair -> stand.
-
-Video target: 10–15 sec.
-
-### Wall Push-Up
-**ID:** `wall_pushup`
-
-```text
-drawable/exercise_wall_pushup_preview.webp
-drawable/exercise_wall_pushup_start.webp
-drawable/exercise_wall_pushup_move.webp
-drawable/exercise_wall_pushup_return.webp
-raw/exercise_wall_pushup_demo.mp4
-```
-
-Show straight body alignment -> controlled movement toward wall -> push back.
-
-Video target: 8–12 sec.
-
-### Standing March
-**ID:** `march`
-
-```text
-drawable/exercise_march_preview.webp
-drawable/exercise_march_start.webp
-drawable/exercise_march_move.webp
-raw/exercise_march_demo.mp4
-```
-
-Show upright posture and alternating knee lift at easy cadence.
-
-Video target: 8–12 sec.
-
-### Calf Raise — General Fitness
-**ID:** `calf_raise_general`
-
-```text
-drawable/exercise_calf_raise_general_preview.webp
-drawable/exercise_calf_raise_general_start.webp
-drawable/exercise_calf_raise_general_move.webp
-drawable/exercise_calf_raise_general_return.webp
-raw/exercise_calf_raise_general_demo.mp4
-```
-
-Can reuse the same source media as `calf_raise` if mapped separately.
-
----
-
-# 4. Asset count
-
-Current catalog contains **25 exercise entries**.
-
-Minimum MVP media target:
-
-- 25 preview images
-- 25 short demo videos
-
-Enhanced guided target:
-
-- preview image for every exercise
-- start image for every exercise
-- move image for every rep-based exercise
-- hold image for every exercise with a hold phase
-- return image for every multi-phase rep exercise
-- short demo video for every exercise
-
-Some duplicate exercise concepts (`bridge` / `bridge_core`, `bird_dog` / `bird_dog_core`, `calf_raise` / `calf_raise_general`) may reuse the same master media while keeping separate app IDs.
-
----
-
-# 5. Integration rules
-
-The app should resolve media by stable `exercise.id`.
-
-Current local resolution pattern:
-
-```text
-Image: exercise_<exercise_id>_<phase>
-Video: exercise_<exercise_id>_demo
-```
-
-Examples:
-
-```text
-exercise_bridge_preview
-exercise_bridge_hold
-exercise_bridge_demo
-```
-
-If a phase image is unavailable:
-
-1. fall back to `preview`
-2. never crash the workout
-3. continue voice/timer guidance normally
-
-If a video is unavailable:
-
-1. show `preview.webp`
-2. continue the routine normally
-
----
-
-# 6. Future S3 migration rules
-
-When moving from local storage to S3:
-
-- retain the same category IDs
-- retain the same exercise IDs
-- retain equivalent filenames
-- replace Android resource lookup with a media manifest/URL lookup
-- use CloudFront for delivery
-- cache images and videos locally on device
-- prefetch the next exercise while the current exercise runs
-- keep the core workout usable even when media download fails
-- do not store AWS access keys in the mobile app
-
-Suggested S3 structure:
-
-```text
-exercises/v1/<category>/<exercise-id>/preview.webp
-exercises/v1/<category>/<exercise-id>/start.webp
-exercises/v1/<category>/<exercise-id>/move.webp
-exercises/v1/<category>/<exercise-id>/hold.webp
-exercises/v1/<category>/<exercise-id>/return.webp
-exercises/v1/<category>/<exercise-id>/demo.mp4
-exercises/v1/<category>/<exercise-id>/metadata.json
-```
-
----
-
-# 7. Media quality and review checklist
-
-Before an asset is considered complete:
-
-- exercise name and ID match the catalog
-- correct movement is demonstrated
-- relevant joints/body alignment are visible
-- no unsafe or misleading form
-- no copyrighted third-party asset without explicit usage rights
-- no watermark
-- neutral and consistent visual presentation
-- video is short and loop-friendly
-- image/video reviewed for exercise correctness before public release
-
-Pain-area exercise media should receive appropriate professional review before CoreFit is positioned as a public rehabilitation or condition-management product.
-
----
-
-# 8. Recommended implementation order
-
-### Phase 1 — MVP media
-Create `preview.webp` + `demo.mp4` for all 25 exercise IDs.
-
-### Phase 2 — guided phase images
-Add start/move/hold/return images for exercises where phase-specific visual guidance adds value.
-
-### Phase 3 — media polish
-Standardize models, camera angles, backgrounds, lighting, cropping and CoreFit visual identity.
-
-### Phase 4 — cloud migration
-Move the same logical library to S3/CloudFront without changing exercise IDs or workout behavior.
+AI-generated exercise media is a production draft, not clinical validation. For back, shoulder, knee, ankle or other pain-area programs, a qualified reviewer should confirm movement, range, cues and demonstration before release. CoreFit should present these as general exercise/conditioning programs rather than diagnosis or individualized treatment.
