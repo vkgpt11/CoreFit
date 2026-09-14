@@ -1,6 +1,7 @@
 package com.example.simpleexercisecounter
 
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -8,6 +9,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
 import android.view.WindowManager
+import android.widget.VideoView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -23,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -54,9 +57,7 @@ fun CoreFitApp() {
                 ExerciseSelectionScreen(
                     category = chosen,
                     selectedIds = selectedIds,
-                    onToggle = { id ->
-                        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
-                    },
+                    onToggle = { id -> selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id },
                     onBack = { screen = AppScreen.HOME },
                     onContinue = { if (selectedIds.isNotEmpty()) screen = AppScreen.REVIEW }
                 )
@@ -72,16 +73,13 @@ fun CoreFitApp() {
             }
             AppScreen.RUNNER -> category?.let { chosen ->
                 val routine = chosen.exercises.filter { it.id in selectedIds }
-                if (routine.isEmpty()) {
-                    screen = AppScreen.REVIEW
-                } else {
-                    RoutineRunner(
-                        category = chosen,
-                        routine = routine,
-                        onExit = { screen = AppScreen.REVIEW },
-                        onDone = { screen = AppScreen.HOME }
-                    )
-                }
+                if (routine.isEmpty()) screen = AppScreen.REVIEW
+                else RoutineRunner(
+                    category = chosen,
+                    routine = routine,
+                    onExit = { screen = AppScreen.REVIEW },
+                    onDone = { screen = AppScreen.HOME }
+                )
             }
         }
     }
@@ -105,9 +103,7 @@ private fun BrandHeader(subtitle: String) {
 
 @Composable
 fun CategoryScreen(onSelect: (ProgramCategory) -> Unit) {
-    Column(
-        Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp)
-    ) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp)) {
         BrandHeader("Guided movement, one step at a time")
         Spacer(Modifier.height(14.dp))
         Card(Modifier.fillMaxWidth()) {
@@ -161,15 +157,19 @@ fun ExerciseSelectionScreen(
             category.exercises.forEach { exercise ->
                 val selected = exercise.id in selectedIds
                 Card(onClick = { onToggle(exercise.id) }, modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
-                        Checkbox(checked = selected, onCheckedChange = { onToggle(exercise.id) })
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(exercise.name, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            Text(exercise.description, style = MaterialTheme.typography.bodyMedium)
-                            Spacer(Modifier.height(6.dp))
-                            Text(exerciseSummary(exercise), style = MaterialTheme.typography.labelMedium)
+                    Column(Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            Checkbox(checked = selected, onCheckedChange = { onToggle(exercise.id) })
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(exercise.name, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                Text(exercise.description, style = MaterialTheme.typography.bodyMedium)
+                                Spacer(Modifier.height(6.dp))
+                                Text(exerciseSummary(exercise), style = MaterialTheme.typography.labelMedium)
+                            }
                         }
+                        Spacer(Modifier.height(10.dp))
+                        ExerciseMedia(exercise = exercise, compact = true)
                     }
                 }
             }
@@ -205,13 +205,17 @@ fun RoutineReviewScreen(
         ) {
             routine.forEachIndexed { index, exercise ->
                 Card(Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("${index + 1}", fontSize = 24.sp, fontWeight = FontWeight.Black)
-                        Spacer(Modifier.width(14.dp))
-                        Column {
-                            Text(exercise.name, fontWeight = FontWeight.Bold)
-                            Text(exerciseSummary(exercise), style = MaterialTheme.typography.bodySmall)
+                    Column(Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("${index + 1}", fontSize = 24.sp, fontWeight = FontWeight.Black)
+                            Spacer(Modifier.width(14.dp))
+                            Column {
+                                Text(exercise.name, fontWeight = FontWeight.Bold)
+                                Text(exerciseSummary(exercise), style = MaterialTheme.typography.bodySmall)
+                            }
                         }
+                        Spacer(Modifier.height(10.dp))
+                        ExerciseMedia(exercise = exercise, compact = true)
                     }
                 }
             }
@@ -247,11 +251,8 @@ fun RoutineRunner(
             val current = engine
             if (status == TextToSpeech.SUCCESS && current != null) {
                 val languageResult = current.setLanguage(Locale.getDefault())
-                ttsReady = languageResult != TextToSpeech.LANG_MISSING_DATA &&
-                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED
-            } else {
-                ttsReady = false
-            }
+                ttsReady = languageResult != TextToSpeech.LANG_MISSING_DATA && languageResult != TextToSpeech.LANG_NOT_SUPPORTED
+            } else ttsReady = false
         }
         tts = engine
         onDispose {
@@ -271,10 +272,15 @@ fun RoutineRunner(
 
     val exercise = routine.getOrNull(exerciseIndex)
 
-    fun speak(text: String) {
+    fun speak(text: String, flush: Boolean = false) {
         if (ttsReady) {
             runCatching {
-                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "corefit-${System.nanoTime()}")
+                tts?.speak(
+                    text,
+                    if (flush) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD,
+                    null,
+                    "corefit-${System.nanoTime()}"
+                )
             }
         }
     }
@@ -297,7 +303,7 @@ fun RoutineRunner(
     fun moveToNextExercise() {
         if (exerciseIndex >= routine.lastIndex) {
             phase = RunPhase.COMPLETE
-            speak("Program complete")
+            speak("Program complete", flush = true)
             buzz()
         } else {
             exerciseIndex++
@@ -305,17 +311,17 @@ fun RoutineRunner(
             currentRep = 0
             seconds = routine[exerciseIndex].transitionSeconds
             phase = RunPhase.TRANSITION
-            speak("Next exercise, ${routine[exerciseIndex].name}")
+            speak("Next exercise, ${routine[exerciseIndex].name}", flush = true)
         }
     }
 
-    LaunchedEffect(exerciseIndex, currentSet, currentRep, phase, paused) {
+    LaunchedEffect(exerciseIndex, currentSet, phase, paused) {
         val item = exercise ?: return@LaunchedEffect
         if (paused || phase == RunPhase.COMPLETE) return@LaunchedEffect
 
         when (phase) {
             RunPhase.READY -> {
-                speak(item.name)
+                speak(item.name, flush = true)
                 for (i in 3 downTo 1) {
                     seconds = i
                     speak(i.toString())
@@ -327,27 +333,35 @@ fun RoutineRunner(
             }
 
             RunPhase.MOVE -> {
+                speak("Move", flush = true)
                 delay((item.moveSeconds * 1000).toLong())
                 if (paused || phase != RunPhase.MOVE) return@LaunchedEffect
                 currentRep++
                 buzz()
-                speak(currentRep.toString())
                 if (item.holdSeconds > 0) {
                     seconds = item.holdSeconds
                     phase = RunPhase.HOLD
-                } else if (currentRep >= item.reps) {
-                    if (currentSet >= item.sets) moveToNextExercise()
-                    else {
-                        currentSet++
-                        seconds = item.restBetweenSets
-                        phase = RunPhase.SET_REST
-                        speak("Rest")
+                } else {
+                    speak(currentRep.toString())
+                    if (currentRep >= item.reps) {
+                        if (currentSet >= item.sets) moveToNextExercise()
+                        else {
+                            currentSet++
+                            seconds = item.restBetweenSets
+                            phase = RunPhase.SET_REST
+                            speak("Rest", flush = true)
+                        }
+                    } else {
+                        speak("Return")
+                        delay(350)
+                        phase = RunPhase.MOVE
                     }
                 }
             }
 
             RunPhase.HOLD -> {
-                val holdFor = item.holdSeconds
+                val holdFor = item.holdSeconds.coerceAtLeast(1)
+                speak("Hold", flush = true)
                 for (i in holdFor downTo 1) {
                     seconds = i
                     if (i <= 3) speak(i.toString())
@@ -361,18 +375,23 @@ fun RoutineRunner(
                         currentSet++
                         seconds = item.restBetweenSets
                         phase = RunPhase.SET_REST
-                        speak("Rest")
-                    }
-                } else if (currentRep >= item.reps) {
-                    if (currentSet >= item.sets) moveToNextExercise()
-                    else {
-                        currentSet++
-                        seconds = item.restBetweenSets
-                        phase = RunPhase.SET_REST
-                        speak("Rest")
+                        speak("Rest", flush = true)
                     }
                 } else {
-                    phase = RunPhase.MOVE
+                    speak(currentRep.toString())
+                    if (currentRep >= item.reps) {
+                        if (currentSet >= item.sets) moveToNextExercise()
+                        else {
+                            currentSet++
+                            seconds = item.restBetweenSets
+                            phase = RunPhase.SET_REST
+                            speak("Rest", flush = true)
+                        }
+                    } else {
+                        speak("Lower")
+                        delay(350)
+                        phase = RunPhase.MOVE
+                    }
                 }
             }
 
@@ -385,7 +404,6 @@ fun RoutineRunner(
                 }
                 currentRep = 0
                 phase = if (item.mode == ExerciseMode.HOLD) RunPhase.HOLD else RunPhase.MOVE
-                speak("Start")
             }
 
             RunPhase.TRANSITION -> {
@@ -466,7 +484,11 @@ private fun RunnerScreen(
             } else {
                 Text("Program complete", fontSize = 26.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
+            if (item != null && phase != RunPhase.COMPLETE) {
+                ExerciseMedia(exercise = item, compact = true)
+                Spacer(Modifier.height(10.dp))
+            }
             LinearProgressIndicator(
                 progress = { if (totalExercises == 0) 0f else (exerciseIndex + if (phase == RunPhase.COMPLETE) 1 else 0).toFloat() / totalExercises },
                 modifier = Modifier.fillMaxWidth()
@@ -475,7 +497,7 @@ private fun RunnerScreen(
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(phaseLabel, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-            Text(mainValue, fontSize = 120.sp, fontWeight = FontWeight.Black)
+            Text(mainValue, fontSize = 112.sp, fontWeight = FontWeight.Black)
             if (item != null && phase != RunPhase.COMPLETE) {
                 Text(
                     when (phase) {
@@ -489,7 +511,7 @@ private fun RunnerScreen(
                     fontSize = 19.sp
                 )
                 item.cues.firstOrNull()?.let {
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(10.dp))
                     Text(it, style = MaterialTheme.typography.bodyLarge)
                 }
             }
@@ -504,6 +526,58 @@ private fun RunnerScreen(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onExit, Modifier.weight(1f)) { Text("Stop") }
                 Button(onPause, Modifier.weight(1f)) { Text(if (paused) "Resume" else "Pause") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseMedia(exercise: ExerciseTemplate, compact: Boolean) {
+    val context = LocalContext.current
+    val imageName = "exercise_${exercise.id}"
+    val videoName = "exercise_${exercise.id}"
+    val imageId = remember(exercise.id) {
+        context.resources.getIdentifier(imageName, "drawable", context.packageName)
+    }
+    val videoId = remember(exercise.id) {
+        context.resources.getIdentifier(videoName, "raw", context.packageName)
+    }
+    var showVideo by remember(exercise.id) { mutableStateOf(false) }
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.fillMaxWidth().padding(if (compact) 8.dp else 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (showVideo && videoId != 0) {
+                AndroidView(
+                    modifier = Modifier.fillMaxWidth().height(if (compact) 120.dp else 190.dp),
+                    factory = { ctx ->
+                        VideoView(ctx).apply {
+                            setVideoURI(Uri.parse("android.resource://${ctx.packageName}/$videoId"))
+                            setOnPreparedListener { player ->
+                                player.isLooping = true
+                                start()
+                            }
+                        }
+                    },
+                    update = { view -> if (!view.isPlaying) view.start() }
+                )
+                TextButton(onClick = { showVideo = false }) { Text("Show image") }
+            } else {
+                Image(
+                    painter = painterResource(if (imageId != 0) imageId else R.drawable.corefit_logo),
+                    contentDescription = "${exercise.name} demonstration",
+                    modifier = Modifier.height(if (compact) 96.dp else 160.dp).fillMaxWidth()
+                )
+                if (videoId != 0) {
+                    TextButton(onClick = { showVideo = true }) { Text("Play short demo") }
+                } else {
+                    Text(
+                        if (imageId != 0) "Exercise demonstration" else "Exercise media will appear here",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
             }
         }
     }
