@@ -65,16 +65,29 @@ fun ExerciseCounter() {
     fun speak(text: String) {
         if (config.voice && ttsReady) tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "counter")
     }
+
     fun buzz() {
         if (!config.vibration) return
         val v = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         v.vibrate(VibrationEffect.createOneShot(70, VibrationEffect.DEFAULT_AMPLITUDE))
     }
+
     fun start() {
-        set = 1; rep = 0; seconds = 3; paused = false; phase = Phase.READY; speak("Get ready")
+        set = 1
+        rep = 0
+        seconds = 3
+        paused = false
+        phase = Phase.READY
+        speak("Get ready")
     }
+
     fun reset() {
-        set = 1; rep = 0; seconds = 3; paused = false; phase = Phase.SETUP; tts?.stop()
+        set = 1
+        rep = 0
+        seconds = 3
+        paused = false
+        phase = Phase.SETUP
+        tts?.stop()
     }
 
     LaunchedEffect(phase, paused, set, config) {
@@ -82,18 +95,29 @@ fun ExerciseCounter() {
         when (phase) {
             Phase.READY -> {
                 for (i in 3 downTo 1) {
-                    seconds = i; speak(i.toString()); delay(1000)
+                    seconds = i
+                    speak(i.toString())
+                    delay(1000)
                     if (paused || phase != Phase.READY) return@LaunchedEffect
                 }
-                rep = 0; phase = Phase.EXERCISE; speak("Start")
+                rep = 0
+                phase = Phase.EXERCISE
+                speak("Start")
             }
+
             Phase.REST -> {
                 for (i in config.restSeconds downTo 1) {
-                    seconds = i; if (i <= 3) speak(i.toString()); delay(1000)
+                    seconds = i
+                    if (i <= 3) speak(i.toString())
+                    delay(1000)
                     if (paused || phase != Phase.REST) return@LaunchedEffect
                 }
-                rep = 0; seconds = 3; phase = Phase.READY; speak("Get ready")
+                rep = 0
+                seconds = 3
+                phase = Phase.READY
+                speak("Get ready")
             }
+
             else -> Unit
         }
     }
@@ -103,12 +127,20 @@ fun ExerciseCounter() {
         while (rep < config.reps) {
             delay((config.secondsPerRep * 1000).toLong())
             if (paused || phase != Phase.EXERCISE) return@LaunchedEffect
-            rep++; buzz(); speak(rep.toString())
+            rep++
+            buzz()
+            speak(rep.toString())
         }
+
         if (set >= config.sets) {
-            phase = Phase.COMPLETE; speak("Workout complete"); buzz()
+            phase = Phase.COMPLETE
+            speak("Workout complete")
+            buzz()
         } else {
-            set++; seconds = config.restSeconds; phase = Phase.REST; speak("Rest")
+            set++
+            seconds = config.restSeconds
+            phase = Phase.REST
+            speak("Rest")
         }
     }
 
@@ -132,21 +164,27 @@ fun Setup(config: WorkoutConfig, update: (WorkoutConfig) -> Unit, start: () -> U
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
-                painter = painterResource(R.drawable.ic_repflow),
-                contentDescription = "RepFlow logo",
-                modifier = Modifier.size(52.dp)
+                painter = painterResource(R.drawable.corefit_logo),
+                contentDescription = "CoreFit logo",
+                modifier = Modifier.size(64.dp)
             )
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(14.dp))
             Column {
-                Text("RepFlow", fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                Text("CoreFit", fontSize = 30.sp, fontWeight = FontWeight.Bold)
                 Text("Automatic reps, sets and rest")
             }
         }
+
         Setting("Repetitions", config.reps.toString()) {
             ChoiceRow(listOf(10, 15, 20, 25, 30), config.reps) { update(config.copy(reps = it)) }
         }
         Setting("Seconds per rep", "${config.secondsPerRep}s") {
-            Slider(config.secondsPerRep, { update(config.copy(secondsPerRep = (it * 2).roundToInt() / 2f)) }, valueRange = 0.5f..3f, steps = 4)
+            Slider(
+                config.secondsPerRep,
+                { update(config.copy(secondsPerRep = (it * 2).roundToInt() / 2f)) },
+                valueRange = 0.5f..3f,
+                steps = 4
+            )
         }
         Setting("Sets", config.sets.toString()) {
             ChoiceRow(listOf(1, 2, 3, 4, 5), config.sets) { update(config.copy(sets = it)) }
@@ -154,14 +192,26 @@ fun Setup(config: WorkoutConfig, update: (WorkoutConfig) -> Unit, start: () -> U
         Setting("Rest", "${config.restSeconds}s") {
             ChoiceRow(listOf(10, 15, 20, 30, 45), config.restSeconds) { update(config.copy(restSeconds = it)) }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Voice counting"); Switch(config.voice, { update(config.copy(voice = it)) })
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Voice counting")
+            Switch(config.voice, { update(config.copy(voice = it)) })
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Vibration cue"); Switch(config.vibration, { update(config.copy(vibration = it)) })
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Vibration cue")
+            Switch(config.vibration, { update(config.copy(vibration = it)) })
         }
         Spacer(Modifier.weight(1f))
-        Button(start, Modifier.fillMaxWidth().height(58.dp)) { Text("Start workout", fontSize = 18.sp) }
+        Button(start, Modifier.fillMaxWidth().height(58.dp)) {
+            Text("Start workout", fontSize = 18.sp)
+        }
     }
 }
 
@@ -170,9 +220,11 @@ fun Setting(title: String, value: String, content: @Composable () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(title, fontWeight = FontWeight.SemiBold); Text(value, fontWeight = FontWeight.Bold)
+                Text(title, fontWeight = FontWeight.SemiBold)
+                Text(value, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.height(8.dp)); content()
+            Spacer(Modifier.height(8.dp))
+            content()
         }
     }
 }
@@ -181,15 +233,26 @@ fun Setting(title: String, value: String, content: @Composable () -> Unit) {
 fun ChoiceRow(options: List<Int>, selected: Int, choose: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         options.forEach { n ->
-            FilterChip(selected = n == selected, onClick = { choose(n) }, label = { Text(n.toString()) })
+            FilterChip(
+                selected = n == selected,
+                onClick = { choose(n) },
+                label = { Text(n.toString()) }
+            )
         }
     }
 }
 
 @Composable
 fun Workout(
-    phase: Phase, config: WorkoutConfig, set: Int, rep: Int, seconds: Int, paused: Boolean,
-    pause: () -> Unit, reset: () -> Unit, repeat: () -> Unit
+    phase: Phase,
+    config: WorkoutConfig,
+    set: Int,
+    rep: Int,
+    seconds: Int,
+    paused: Boolean,
+    pause: () -> Unit,
+    reset: () -> Unit,
+    repeat: () -> Unit
 ) {
     val title = when (phase) {
         Phase.READY -> "GET READY"
@@ -198,12 +261,14 @@ fun Workout(
         Phase.COMPLETE -> "COMPLETE"
         else -> ""
     }
+
     val value = when (phase) {
         Phase.READY, Phase.REST -> seconds.toString()
         Phase.EXERCISE -> rep.toString()
         Phase.COMPLETE -> "✓"
         else -> ""
     }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -214,24 +279,34 @@ fun Workout(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
-                painter = painterResource(R.drawable.ic_repflow),
-                contentDescription = "RepFlow logo",
-                modifier = Modifier.size(42.dp)
+                painter = painterResource(R.drawable.corefit_logo),
+                contentDescription = "CoreFit logo",
+                modifier = Modifier.size(48.dp)
             )
             Spacer(Modifier.height(8.dp))
-            Text(if (phase == Phase.COMPLETE) "Workout finished" else "SET $set / ${config.sets}", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(20.dp)); Text(title, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (phase == Phase.COMPLETE) "Workout finished" else "SET $set / ${config.sets}",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(20.dp))
+            Text(title, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         }
+
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, fontSize = 130.sp, fontWeight = FontWeight.Black)
-            Text(when (phase) {
-                Phase.EXERCISE -> "of ${config.reps} reps"
-                Phase.REST -> "seconds rest"
-                Phase.READY -> "seconds"
-                Phase.COMPLETE -> "${config.sets} sets × ${config.reps} reps"
-                else -> ""
-            }, fontSize = 20.sp)
+            Text(
+                when (phase) {
+                    Phase.EXERCISE -> "of ${config.reps} reps"
+                    Phase.REST -> "seconds rest"
+                    Phase.READY -> "seconds"
+                    Phase.COMPLETE -> "${config.sets} sets × ${config.reps} reps"
+                    else -> ""
+                },
+                fontSize = 20.sp
+            )
         }
+
         if (phase == Phase.COMPLETE) {
             Column(Modifier.fillMaxWidth()) {
                 Button(repeat, Modifier.fillMaxWidth()) { Text("Repeat workout") }
