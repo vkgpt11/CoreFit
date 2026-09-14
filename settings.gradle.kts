@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "RepFlow"
+rootProject.name = "CoreFit"
 include(":app")
