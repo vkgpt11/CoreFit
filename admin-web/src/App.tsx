@@ -1,41 +1,14 @@
-import { useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import './styles.css';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1';
-
-export default function App() {
-  const [exerciseId, setExerciseId] = useState('wall_angels');
-  const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState('');
-
-  async function upload() {
-    if (!file) return;
-    setStatus('Requesting upload URL...');
-    const response = await fetch(`${API_BASE}/admin/media/upload-url`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ exercise_id: exerciseId, filename: file.name, content_type: file.type || 'application/octet-stream' })
-    });
-    if (!response.ok) throw new Error('Could not create upload URL');
-    const { upload_url } = await response.json();
-    setStatus('Uploading media...');
-    const uploadResponse = await fetch(upload_url, {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      body: file
-    });
-    if (!uploadResponse.ok) throw new Error('Upload failed');
-    setStatus('Uploaded successfully');
-  }
-
-  return (
-    <main>
-      <h1>CoreFit Admin</h1>
-      <p>Manage exercise content and upload images/videos.</p>
-      <label>Exercise ID<input value={exerciseId} onChange={e => setExerciseId(e.target.value)} /></label>
-      <label>Media file<input type="file" accept="image/*,video/*" onChange={e => setFile(e.target.files?.[0] ?? null)} /></label>
-      <button onClick={() => upload().catch(e => setStatus(e.message))} disabled={!file}>Upload</button>
-      <p>{status}</p>
-    </main>
-  );
+const API = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1';
+type Exercise = {id:string;name:string;category:string;description:string;reps:number;sets:number;move_seconds:number;hold_seconds:number;rest_seconds:number;published:boolean;media_url?:string};
+const blank: Exercise = {id:'',name:'',category:'General',description:'',reps:10,sets:1,move_seconds:2,hold_seconds:0,rest_seconds:20,published:false};
+export default function App(){
+ const [token,setToken]=useState(localStorage.getItem('corefit-admin-token')??''); const [items,setItems]=useState<Exercise[]>([]); const [form,setForm]=useState<Exercise>(blank); const [file,setFile]=useState<File|null>(null); const [status,setStatus]=useState('');
+ const headers=()=>({'Content-Type':'application/json','X-Admin-Token':token});
+ async function load(){const r=await fetch(`${API}/admin/exercises`,{headers:headers()}); if(!r.ok) throw new Error('Unable to load exercises'); setItems((await r.json()).items)}
+ useEffect(()=>{if(token) load().catch(e=>setStatus(e.message))},[token]);
+ async function save(e:FormEvent){e.preventDefault(); localStorage.setItem('corefit-admin-token',token); const r=await fetch(`${API}/admin/exercises/${form.id}`,{method:'PUT',headers:headers(),body:JSON.stringify(form)}); if(!r.ok) throw new Error(await r.text()); setStatus('Exercise saved'); await load()}
+ async function upload(){if(!file||!form.id)return; setStatus('Uploading…'); const r=await fetch(`${API}/admin/media/upload-url`,{method:'POST',headers:headers(),body:JSON.stringify({exercise_id:form.id,filename:file.name,content_type:file.type})}); if(!r.ok)throw new Error(await r.text()); const u=await r.json(); const put=await fetch(u.upload_url,{method:'PUT',headers:{'Content-Type':file.type},body:file}); if(!put.ok)throw new Error('Storage upload failed'); const done=await fetch(`${API}/admin/media/complete`,{method:'POST',headers:headers(),body:JSON.stringify({exercise_id:form.id,object_name:u.object_name})}); if(!done.ok)throw new Error(await done.text()); setStatus('Media uploaded and published to exercise metadata'); await load()}
+ return <main><h1>CoreFit Admin</h1><p>Manage exercise catalog and media.</p><label>Admin token<input type="password" value={token} onChange={e=>setToken(e.target.value)}/></label><form onSubmit={e=>save(e).catch(x=>setStatus(x.message))}><label>ID<input required pattern="[a-z0-9_-]+" value={form.id} onChange={e=>setForm({...form,id:e.target.value})}/></label><label>Name<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label><label>Category<input value={form.category} onChange={e=>setForm({...form,category:e.target.value})}/></label><label>Description<textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><div className="grid">{(['reps','sets','move_seconds','hold_seconds','rest_seconds'] as const).map(k=><label key={k}>{k}<input type="number" min="0" value={form[k]} onChange={e=>setForm({...form,[k]:Number(e.target.value)})}/></label>)}</div><label><input type="checkbox" checked={form.published} onChange={e=>setForm({...form,published:e.target.checked})}/> Published</label><button>Save exercise</button></form><hr/><label>Media<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={e=>setFile(e.target.files?.[0]??null)}/></label><button onClick={()=>upload().catch(e=>setStatus(e.message))} disabled={!file||!form.id}>Upload media</button><p>{status}</p><h2>Exercises</h2>{items.map(x=><button className="row" key={x.id} onClick={()=>setForm(x)}>{x.name} · {x.category} · {x.published?'Published':'Draft'}</button>)}</main>
 }
